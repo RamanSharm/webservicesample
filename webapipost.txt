@@ -1,0 +1,59 @@
+     h DFTACTGRP(*NO) ACTGRP(*NEW) BNDDIR('RAMAN/RAMAN_DIR')
+         /COPY QSYSINC/QRPGLESRC,QUSEC
+      *
+     d GetEnv          pr              *   extproc('getenv')
+     d Var                             *   value options(*string)
+      *
+     d WriteToWeb      pr                  extproc('QtmhWrStout')
+     d DataVar                    65535a   options(*varsize)
+     d DataLen                       10i 0 const
+     d ErrCode                     8000a   options(*varsize)
+      *
+     d ReadFromWeb     pr                  extproc('QtmhRdStin')
+     d szRtnBuffer                65535a   options(*varsize)
+     d nBuflen                       10i 0 const
+     d nRtnlen                       10i 0
+     d QUSEC                               like(QUSEC)
+      *
+     d apiErr          ds                  likeds(QUSEC) inz
+      *
+     d ErrDs           ds                  qualified
+     d ByteProv                      10i 0 inz(0)
+     d ByteAvail                     10i 0 inz(0)
+      *
+     d CRLF            c                   x'0d25'
+     d Data            s           5000a
+     d URL             s            500a   varying
+     d Pos             s             10i 0
+     d ReqMethod       s             20a
+     d ContentType     s            100a
+     d RtnBuffer       s           4096a   inz
+     d RtnLen          s             10i 0 inz
+      *
+      *__________ main line ______________________
+      /free
+           *inlr=*on;
+         // setting for content type
+           Data = 'Content-type: text/html' + CRLF + CRLF ;
+           WriteToWeb(Data : %len(%Trim(Data)): ErrDS);
+         // getting uri from getenv
+           URL = %Str(GetEnv('REQUEST_URI'));
+           ReqMethod = %Str(GetEnv('REQUEST_METHOD'));
+           If ReqMethod = 'POST';
+             ContentType = %Str(GetEnv('CONTENT_TYPE')) + CRLF ;
+             WriteToWeb(ContentType:%len(%trim(ContentType)):ErrDs);
+
+          // read from browser and store into buffer
+             ReadFromWeb(RtnBuffer: %size(RtnBuffer): RtnLen: apiErr);
+           EndIf;
+
+          // print data on to browser
+           Data = 'URL:' + %trim(URL) + '<br>' + CRLF +
+                  'Req Method:' + %trim(ReqMethod) + '<br>' + CRLF +
+                  'Contenttype:' + %trim(ContentType) + CRLF ;
+           WriteToWeb(Data : %len(%Trim(Data)): ErrDS);
+
+         // print data from buffer on browser
+           Data = 'Data:' + %trim(RtnBuffer) + CRLF ;
+           WriteToWeb(Data : %len(%Trim(Data)): ErrDS);
+      /end-free

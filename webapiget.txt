@@ -1,0 +1,51 @@
+     h DFTACTGRP(*NO) ACTGRP(*NEW) BNDDIR('RAMAN/RAMAN_DIR')
+     fstudpf    if   e           k disk
+      *
+     d GetEnv          pr              *   extproc('getenv')
+     d var                             *   value options(*string)
+      *
+     d writetoweb      pr                  extproc('QtmhWrStout')
+     d datavar                    65535a   options(*varsize)
+     d datalen                       10i 0 const
+     d errcode                     8000a   options(*varsize)
+      *
+     d CRLF            c                   x'0d25'
+     d data            s           5000a
+     d URL             s            500a   varying
+     d id              s                   like(sid)
+     d pos             s             10i 0
+      *
+     d errds           ds                  qualified
+     d byteprov                      10i 0 inz(0)
+     d byteavail                     10i 0 inz(0)
+      *____________ main line ____________________________
+      /free
+         //  settings for content type
+           data='Content-type:text/plain' + CRLF + CRLF ;
+             writetoweb(data:%len(%trim(data)):errds);
+
+         //  get uri from getenv
+           URL = %str(GetEnv('REQUEST_URI'));
+         //
+         // get the position of id what you want to get info
+             pos=%scan('/webapiget1/':url) + %len('/webapiget1/') ;
+           monitor ;
+             id=%int(%subst(url:pos)) ;
+           on-error;
+             data = 'error';
+             writetoweb(data:%len(%trim(data)):errds);
+             return;
+           endmon;
+         // check id wheather it occur or not in the table
+           chain id studpf;
+           if %found(studpf);
+            data='name=' + %char(sname) +
+                 'class='+ %char(sclass);
+         // write data on browser
+            writetoweb(data:%len(%trim(data)):errds);
+           else;
+            data='not found';
+            writetoweb(data:%len(%trim(data)):errds);
+           endif;
+           *inlr = *on ;
+      /end-free
