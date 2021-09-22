@@ -1,0 +1,24 @@
+     d url             s            500a
+     d Response        s           4096a
+     d Body            s           4096a
+     d Header          s            200a
+      *
+          url = 'http://129.40.98.241:8021/ws/webapipost' ;
+          Header = '<httpHeader>                                               +
+                          <header name="Content-Type" value="text/plain">      +
+                          </header>                                            +
+                   </httpHeader>';
+          Body = '{ +
+                 "name":"dada" +
+                 } ' ;
+
+          Exec Sql
+                 Set Option commit = *none;
+          Exec sql call QSYS2.QCMDEXC('CHGJOB CCSID(37)');
+
+          Exec Sql
+                 Select DATA into : Response from(values
+                 char(SYSTOOLS.HTTPPOSTCLOB(:url,:Header,:Body),4096))ws(DATA) ;
+          Exec Sql
+                 Insert into Raman/testpf1 values(:Response);
+          *inlr = *on;
